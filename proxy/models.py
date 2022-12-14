@@ -11,15 +11,14 @@ class BaseModel(models.Model):
         abstract = True
 
 
+class ActivatedQuerySet(models.QuerySet):
+    def delete(self):
+        self.update(deleted=timezone.now())
+
+
 class ActivatedManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(deleted__isnull=True)
-
-    def __delete__(self, instance):
-        return self.update(deleted=timezone.now())
-
-    def delete(self):
-        return self.update(deleted=timezone.now())
 
 
 class DeletedManager(models.Manager):
@@ -56,7 +55,7 @@ class Item(BaseModel):
 
 
 class ActivatedItem(ActivatedActionMixin, Item):
-    objects = ActivatedManager()
+    objects = ActivatedManager.from_queryset(ActivatedQuerySet)()
 
     class Meta:
         proxy = True
