@@ -1,0 +1,23 @@
+{% extends 'admin/change_list.html' %}
+{% block object-tools %}
+    <div>
+        <form action="extend-ownership-by-days" method="POST">
+            {% csrf_token %}
+                <strong>항목</strong> :
+                <input type="radio" id="categoryAll" name="category" value="all">
+                <label for='categoryAll'>전체</label>
+                <input type="radio" id="longTerm" name="category" value="longTerm">
+                <label for='longTerm'>전세</label>
+                <input type="radio" id="shortTerm" name="category" value="shortTerm">
+                <label for='shortTerm'>월세</label>
+                <br  />
+                <br  />
+                <strong>증가 일수</strong> :
+                <input type="number" id='days' name="days">
+                <br />
+                <br />
+                <button class="button" style="margin-bottom: 1rem" type="submit">일수 늘리기</button>
+        </form>
+    </div>
+    {{ block.super }}
+{% endblock %}

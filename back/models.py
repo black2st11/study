@@ -1,33 +1,47 @@
 from django.db import models
-from django.db.models import OuterRef
+from django.db.models import OuterRef, When, Case, Exists, Value
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
 class HouseQuerySet(models.QuerySet):
     def current_owner(self):
-        ownership = Ownership.objects.filter(
+        owner_names = Ownership.objects.filter(
             house_id=OuterRef('pk'),
             category=Ownership.Category.BUY,
         ).order_by('-started').values('owner__name')
         return self.annotate(
-            current_owner=ownership[:1]
+            current_owner=owner_names[:1]
         )
 
     def current_tenant(self):
-        ownership = Ownership.objects.filter(
+        tenant_names = Ownership.objects.filter(
             house_id=OuterRef('pk'),
             category__in=[Ownership.Category.LONG_TERM, Ownership.Category.SHORT_TERM],
             ended__gt=timezone.now()
         ).order_by('-started').values('owner__name')
         return self.annotate(
-            current_tenant=ownership[:1]
+            current_tenant=tenant_names[:1]
+        )
+
+    def current_status(self):
+        categories = Ownership.objects.filter(
+            house_id=OuterRef('pk'),
+            category__in=[Ownership.Category.LONG_TERM, Ownership.Category.SHORT_TERM],
+            ended__gt=timezone.now()
+        ).order_by('-started').values('category')
+
+        return self.annotate(
+            ownership_category=Case(
+                When(condition=Exists(categories[:1]), then=categories[:1]),
+                default=Value('empty')
+            )
         )
 
 
 class HouseManager(models.Manager):
     def get_queryset(self):
-        return HouseQuerySet(self.model).current_tenant().current_owner()
+        return HouseQuerySet(self.model).current_tenant().current_owner().current_status()
 
 
 class Person(models.Model):
